@@ -2,7 +2,7 @@
 # Name of the GitHub Actions workflow
 name: My First Workflow
 
-# Trigger the workflow whenever code is pushed to GitHub
+# Trigger workflow whenever code is pushed
 on: push
 
 # Define all jobs in this workflow
@@ -10,33 +10,30 @@ jobs:
 
   # First job
   job-1:
-
-    # Select Ubuntu as the machine (runner)
     runs-on: ubuntu-latest
 
-    # Define the steps inside job-1
+    # Steps inside job-1
     steps:
-
-      # First step
       - name: Step 1
-        # Execute a shell command
         run: echo "Hello from step-1"
 
-      # Second step
       - name: Step 2
-        # Execute another shell command
         run: echo "Hello from step-2"
 
   # Second job
   job-2:
-
-    # Select a separate Ubuntu runner for job-2
     runs-on: ubuntu-latest
 
-    # Define steps inside job-2
+    # Steps inside job-2
     steps:
-
-      # Third step
       - name: Step 3
-        # Execute a shell command
         run: echo "Hello from step-3"
+
+  # Third job
+  job-3:
+    runs-on: ubuntu-latest
+
+    # Steps inside job-3
+    steps:
+      - name: Step 4
+        run: echo "Namaste Miya"
