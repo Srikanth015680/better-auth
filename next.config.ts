@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   experimental: {
     agentFeedback: true,
   },
+  serverExternalPackages:["@node-rs/argon2"],
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {
