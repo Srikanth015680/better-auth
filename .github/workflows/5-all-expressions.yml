@@ -1,0 +1,102 @@
+
+# Workflow name
+name: All Expressions Demo
+
+# Trigger
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  expressions:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # STEP 1: Checkout repository
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      # TYPE 1: Comparison operators
+      - name: Comparison Expressions
+        if: github.ref == 'refs/heads/main'
+        run: echo "Running on main branch"
+
+      # Not equal operator
+      - name: Not Equal Expression
+        if: github.ref != 'refs/heads/develop'
+        run: echo "Branch is not develop"
+
+      # TYPE 2: Logical AND operator
+      # Both conditions must be true
+      - name: AND Expression
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: echo "Main branch push detected"
+
+      # TYPE 3: Logical OR operator
+      # At least one condition must be true
+      - name: OR Expression
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+        run: echo "Main or develop branch"
+
+      # TYPE 4: NOT operator
+      - name: NOT Expression
+        if: ${{ !cancelled() }}
+        run: echo "Workflow is not cancelled"
+
+      # TYPE 5: contains() function
+      - name: Contains Function
+        if: contains(github.ref, 'main')
+        run: echo "Branch contains main"
+
+      # TYPE 6: startsWith() function
+      - name: Starts With Function
+        if: startsWith(github.ref, 'refs/heads/')
+        run: echo "This is a branch reference"
+
+      # TYPE 7: endsWith() function
+      - name: Ends With Function
+        if: endsWith(github.ref, '/main')
+        run: echo "Reference ends with main"
+
+      # TYPE 8: format() function
+      - name: Format Function
+        run: |
+          echo "${{ format('Repository: {0}', github.repository) }}"
+
+      # TYPE 9: join() function
+      - name: Join Function
+        run: |
+          echo "${{ join(github.event.issue.labels.*.name, ', ') }}"
+        if: github.event_name == 'issues'
+
+      # TYPE 10: toJSON() function
+      - name: JSON Function
+        run: |
+          echo '${{ toJSON(github.event) }}'
+
+      # TYPE 11: fromJSON() function
+      - name: From JSON Function
+        run: |
+          echo '${{ fromJSON('{"app":"Next.js","version":"22"}').app }}'
+
+      # TYPE 12: success() status function
+      - name: Success Function
+        if: success()
+        run: echo "Previous steps succeeded"
+
+      # TYPE 13: failure() status function
+      - name: Failure Function
+        if: failure()
+        run: echo "A previous step failed"
+
+      # TYPE 14: always() status function
+      - name: Always Function
+        if: always()
+        run: echo "This step runs regardless of previous step status"
+
+      # TYPE 15: cancelled() status function
+      - name: Cancelled Function
+        if: cancelled()
+        run: echo "Workflow was cancelled"
