@@ -1,13 +1,20 @@
+
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Generate standalone production server
+  output: "standalone",
+
   experimental: {
     agentFeedback: true,
   },
-  serverExternalPackages:["@node-rs/argon2"],
+
+  serverExternalPackages: ["@node-rs/argon2"],
+
   cacheComponents: true,
+
   partialPrefetching: true,
+
   turbopack: {
     rules: {
       "*.css": {
