@@ -1,0 +1,74 @@
+
+# Workflow name
+name: All Variables Demo
+
+# Trigger workflow
+on:
+  push:
+    branches:
+      - main
+
+# TYPE 1: Workflow-level variables
+# Available to all jobs and steps
+env:
+  APP_NAME: better-auth-gitactions
+  NODE_VERSION: "22"
+  ENVIRONMENT: production
+
+# Define jobs
+jobs:
+
+  # First job
+  build:
+    runs-on: ubuntu-latest
+
+    # TYPE 2: Job-level variables
+    # Available to all steps in this job
+    env:
+      JOB_NAME: build-job
+      BUILD_MODE: production
+
+    steps:
+
+      # Checkout repository
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      # TYPE 3: Step-level variables
+      # Available only in this step
+      - name: Display Step Variables
+        env:
+          STEP_NAME: installation-step
+        run: |
+          echo "Workflow Variable: $APP_NAME"
+          echo "Job Variable: $JOB_NAME"
+          echo "Step Variable: $STEP_NAME"
+          echo "Node Version: $NODE_VERSION"
+
+      # TYPE 4: Repository variables
+      # Configure these in GitHub repository settings
+      - name: Display Repository Variables
+        run: |
+          echo "Docker Username: ${{ vars.DOCKERHUB_USERNAME }}"
+          echo "Docker Image: ${{ vars.DOCKER_IMAGE_NAME }}"
+
+      # TYPE 5: Organization variables
+      # Available when configured at organization level
+      - name: Display Organization Variables
+        run: |
+          echo "Organization Environment: ${{ vars.ORG_ENVIRONMENT }}"
+
+      # TYPE 6: Environment variables
+      # Requires a GitHub environment named production
+      - name: Display Environment Variables
+        environment: production
+        run: |
+          echo "Deployment Region: ${{ vars.DEPLOY_REGION }}"
+
+      # TYPE 7: Secrets
+      # Configure these under GitHub repository secrets
+      - name: Docker Login
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}

@@ -1,0 +1,29 @@
+
+# Workflow name
+name: Workflow Variable Demo
+
+# Define workflow-level variables
+env:
+  APP_NAME: better-auth-gitactions
+  NODE_VERSION: "22"
+  ENVIRONMENT: production
+
+# Workflow trigger
+on:
+  push:
+    branches:
+      - main
+
+# Define jobs
+jobs:
+  build:
+    # Select Ubuntu runner
+    runs-on: ubuntu-latest
+
+    steps:
+      # Display workflow-level variables
+      - name: Display Variables
+        run: |
+          echo "Application: $APP_NAME"
+          echo "Node Version: $NODE_VERSION"
+          echo "Environment: $ENVIRONMENT"

@@ -1,0 +1,122 @@
+
+# Workflow name
+name: All Contexts Demo
+
+# Workflow trigger
+on:
+  push:
+    branches:
+      - main
+
+  # Manual execution with an input
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Select deployment environment
+        required: true
+        type: choice
+        options:
+          - development
+          - production
+
+# Workflow-level variable
+env:
+  APP_NAME: better-auth-gitactions
+
+jobs:
+
+  # JOB 1
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # STEP 1: Checkout
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      # TYPE 1: GitHub context
+      - name: GitHub Context
+        run: |
+          echo "Repository: ${{ github.repository }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Actor: ${{ github.actor }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Event: ${{ github.event_name }}"
+
+      # TYPE 2: Environment context
+      - name: Environment Context
+        run: |
+          echo "Application: ${{ env.APP_NAME }}"
+
+      # TYPE 3: Variables context
+      - name: Variables Context
+        run: |
+          echo "Docker Image: ${{ vars.DOCKER_IMAGE_NAME }}"
+
+      # TYPE 4: Secrets context
+      # Never print secret values
+      - name: Secrets Context
+        env:
+          DOCKER_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          if [ -n "$DOCKER_TOKEN" ]; then
+            echo "Docker token is configured"
+          else
+            echo "Docker token is not configured"
+          fi
+
+      # TYPE 5: Runner context
+      - name: Runner Context
+        run: |
+          echo "OS: ${{ runner.os }}"
+          echo "Architecture: ${{ runner.arch }}"
+          echo "Runner Name: ${{ runner.name }}"
+          echo "Temp: ${{ runner.temp }}"
+
+      # TYPE 6: Job context
+      - name: Job Context
+        run: |
+          echo "Job Status: ${{ job.status }}"
+
+      # TYPE 7: Steps context
+      # Give the step an ID to access its output
+      - name: Generate App Name
+        id: app
+        run: echo "name=better-auth-gitactions" >> "$GITHUB_OUTPUT"
+
+      - name: Steps Context
+        run: |
+          echo "App Name: ${{ steps.app.outputs.name }}"
+          echo "Step Result: ${{ steps.app.outcome }}"
+
+  # JOB 2
+  build:
+    runs-on: ubuntu-latest
+
+    # TYPE 8: Needs context
+    # Wait for test job
+    needs: test
+
+    # TYPE 9: Matrix context
+    strategy:
+      matrix:
+        node-version: ["22", "24"]
+
+    steps:
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Display Matrix Context
+        run: |
+          echo "Node Version: ${{ matrix.node-version }}"
+          echo "Previous Job Result: ${{ needs.test.result }}"
+
+      # TYPE 10: Inputs context
+      - name: Display Workflow Input
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          echo "Selected Environment: ${{ inputs.environment }}"
