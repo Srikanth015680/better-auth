@@ -1,0 +1,34 @@
+
+# Workflow name
+name: Path Ignore Demo
+
+# Workflow trigger
+on:
+  # Trigger on push
+  push:
+    # Only main branch
+    branches:
+      - main
+
+    # Ignore these paths
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - "*.txt"
+
+# Define jobs
+jobs:
+  path-check:
+
+    # Use Ubuntu runner
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # Checkout repository
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      # Print message
+      - name: Print Message
+        run: echo "Relevant project changes detected!"

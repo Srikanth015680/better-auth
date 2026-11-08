@@ -1,0 +1,33 @@
+
+# Name displayed in GitHub Actions
+name: Branch Filter Demo
+
+# Define the workflow trigger
+on:
+  # Trigger when code is pushed
+  push:
+    # Run only for these branches
+    branches:
+      - main
+      - develop
+
+# Define workflow jobs
+jobs:
+  # Job identifier
+  branch-check:
+
+    # Use GitHub-hosted Ubuntu runner
+    runs-on: ubuntu-latest
+
+    # Define execution steps
+    steps:
+
+      # Step 1: Download repository code
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      # Step 2: Display branch information
+      - name: Print Branch Name
+        run: |
+          echo "Workflow triggered successfully"
+          echo "Branch: $GITHUB_REF_NAME"

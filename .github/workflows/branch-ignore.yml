@@ -1,0 +1,29 @@
+
+# Workflow name
+name: Branch Ignore Demo
+
+# Workflow trigger
+on:
+  # Trigger on code push
+  push:
+    # Ignore these branches
+    branches-ignore:
+      - "experimental/*"
+      - "temp/*"
+
+# Define jobs
+jobs:
+  branch-check:
+
+    # Select Ubuntu runner
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # Checkout repository
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      # Print branch name
+      - name: Print Branch
+        run: echo "Running on $GITHUB_REF_NAME"

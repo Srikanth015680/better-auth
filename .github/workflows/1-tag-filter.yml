@@ -1,0 +1,30 @@
+
+# Workflow name
+name: Tag Filter Demo
+
+# Workflow trigger
+on:
+  # Trigger on push
+  push:
+    # Run only when matching tags are pushed
+    tags:
+      - "v*"
+
+# Define jobs
+jobs:
+  release:
+
+    # Use Ubuntu runner
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # Checkout repository
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      # Print release tag
+      - name: Print Release Version
+        run: |
+          echo "Release workflow started"
+          echo "Tag: $GITHUB_REF_NAME"

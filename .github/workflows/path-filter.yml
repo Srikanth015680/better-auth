@@ -1,0 +1,39 @@
+
+# Workflow name
+name: Path Filter Demo
+
+# Workflow trigger
+on:
+  # Trigger on code push
+  push:
+    # Only check main branch
+    branches:
+      - main
+
+    # Run only when these paths change
+    paths:
+      - "app/**"
+      - "components/**"
+      - "lib/**"
+      - "prisma/**"
+      - "package.json"
+      - "package-lock.json"
+      - "next.config.ts"
+      - "prisma.config.ts"
+
+# Define jobs
+jobs:
+  path-check:
+
+    # Select Ubuntu runner
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # Checkout repository
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      # Print success message
+      - name: Path Filter Message
+        run: echo "Application files changed!"

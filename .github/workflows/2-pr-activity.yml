@@ -1,0 +1,40 @@
+
+# Workflow name
+name: Pull Request Activity Demo
+
+# Define workflow trigger
+on:
+  # Trigger for pull request events
+  pull_request:
+
+    # Select which PR activities trigger the workflow
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - closed
+      - ready_for_review
+
+    # Only PRs targeting main
+    branches:
+      - main
+
+# Define jobs
+jobs:
+  pr-check:
+
+    # Use Ubuntu runner
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # Checkout repository
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      # Print PR information
+      - name: Print PR Activity
+        run: |
+          echo "Pull request activity detected"
+          echo "Event: ${{ github.event.action }}"
+          echo "PR Number: ${{ github.event.pull_request.number }}"
