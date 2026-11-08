@@ -1,0 +1,13 @@
+name: Scheduled Trigger
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+
+jobs:
+  scheduled-job:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Scheduled Task
+        run: echo "Scheduled workflow executed"

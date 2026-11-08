@@ -1,0 +1,14 @@
+name: External Trigger
+
+on:
+  repository_dispatch:
+    types:
+      - external-trigger
+
+jobs:
+  external-job:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: External Event
+        run: echo "External system triggered workflow"

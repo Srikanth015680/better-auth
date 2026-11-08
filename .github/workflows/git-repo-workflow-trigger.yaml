@@ -1,0 +1,26 @@
+name: Repository Events
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+  release:
+    types:
+      - published
+
+  issues:
+    types:
+      - opened
+
+jobs:
+  repository-job:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Repository Event
+        run: echo "Repository event detected"
