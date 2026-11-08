@@ -1,0 +1,38 @@
+
+# Workflow name
+name: Standard GitHub Runner
+
+# Trigger manually
+on:
+  workflow_dispatch:
+
+# Define jobs
+jobs:
+
+  # Next.js build job
+  nextjs-build:
+
+    # Select standard Ubuntu runner
+    runs-on: ubuntu-latest
+
+    # Define steps
+    steps:
+
+      # Download project source code
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Install Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Install dependencies
+      - name: Install Dependencies
+        run: npm ci
+
+      # Build Next.js application
+      - name: Build Next.js
+        run: npm run build
