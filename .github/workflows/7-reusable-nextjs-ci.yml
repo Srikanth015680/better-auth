@@ -1,0 +1,67 @@
+
+name: Reusable Next.js CI
+
+# This workflow can be called by another workflow.
+on:
+  workflow_call:
+    inputs:
+
+      # Input 1: Node.js version.
+      node_version:
+        description: "Node.js version to use"
+        required: false
+        type: string
+        default: "22"
+
+      # Input 2: Enable or disable tests.
+      run_tests:
+        description: "Should tests run?"
+        required: false
+        type: boolean
+        default: true
+
+      # Input 3: Application environment.
+      app_environment:
+        description: "Application environment"
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Download the source code.
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      # Install the Node.js version received as input.
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ inputs.node_version }}
+          cache: npm
+
+      # Install dependencies.
+      - name: Install Dependencies
+        run: npm ci
+
+      # Generate Prisma Client.
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      # Run tests only when run_tests is true.
+      - name: Run Tests
+        if: ${{ inputs.run_tests }}
+        run: npm test
+
+      # Build the Next.js application.
+      - name: Build Next.js Application
+        run: npm run build
+
+      # Display the received environment.
+      - name: Display Environment
+        run: |
+          echo "Node.js: ${{ inputs.node_version }}"
+          echo "Environment: ${{ inputs.app_environment }}"
+          echo "Tests enabled: ${{ inputs.run_tests }}"
