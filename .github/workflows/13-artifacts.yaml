@@ -1,0 +1,148 @@
+
+name: Next.js Docker CI - Artifacts Demo
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+jobs:
+
+  # ==================================================
+  # JOB 1: Build, run and test the Next.js container
+  # ==================================================
+  nextjs-ci-job:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # STEP 1: Download project source code.
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      # STEP 2: Install Node.js 22.
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+
+      # STEP 3: Install dependencies.
+      - name: Install Dependencies
+        run: npm ci
+
+      # STEP 4: Generate Prisma Client.
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      # STEP 5: Build Next.js application.
+      - name: Build Next.js Application
+        run: npm run build
+
+      # STEP 6: Build Docker image.
+      - name: Build Docker Image
+        run: |
+          docker build -t better-auth-app:ci .
+
+      # STEP 7: Run Docker container.
+      - name: Run Container
+        run: |
+          docker run -d \
+            --name better-auth-container \
+            -p 3000:3000 \
+            -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+            -e BETTER_AUTH_SECRET="${{ secrets.BETTER_AUTH_SECRET }}" \
+            -e BETTER_AUTH_URL="http://localhost:3000" \
+            better-auth-app:ci
+
+      # STEP 8: Generate smoke test report.
+      - name: Generate Smoke Test Report
+        run: |
+          mkdir -p reports
+
+          echo "===== Next.js Smoke Test Report =====" \
+            > reports/smoke-test-report.txt
+
+          echo "Waiting for application..." \
+            >> reports/smoke-test-report.txt
+
+          # Retry the homepage request.
+          if curl --retry 10 \
+                  --retry-delay 3 \
+                  --retry-connrefused \
+                  --fail \
+                  http://localhost:3000/ \
+                  -o /dev/null \
+                  -w "HTTP Status: %{http_code}\n" \
+                  >> reports/smoke-test-report.txt; then
+
+            echo "Application smoke test: PASSED" \
+              >> reports/smoke-test-report.txt
+          else
+            echo "Application smoke test: FAILED" \
+              >> reports/smoke-test-report.txt
+            exit 1
+          fi
+
+      # STEP 9: Export Docker container logs.
+      - name: Export Container Logs
+        if: always()
+        run: |
+          mkdir -p reports
+
+          docker logs better-auth-container \
+            > reports/container-logs.txt 2>&1 || true
+
+      # STEP 10: Upload reports and logs.
+      - name: Upload Artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: nextjs-ci-artifacts
+          path: |
+            reports/smoke-test-report.txt
+            reports/container-logs.txt
+          if-no-files-found: warn
+          retention-days: 5
+
+      # STEP 11: Clean up container.
+      - name: Cleanup Container
+        if: always()
+        run: |
+          docker rm -f better-auth-container || true
+
+
+  # ==========================================
+  # JOB 2: Download and review uploaded files
+  # ==========================================
+  review-job:
+    runs-on: ubuntu-latest
+
+    # Wait for Job 1.
+    needs: nextjs-ci-job
+
+    # Run even if Job 1 fails, so we can inspect reports.
+    if: always()
+
+    steps:
+
+      # STEP 1: Download artifacts from Job 1.
+      - name: Download Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: nextjs-ci-artifacts
+          path: reports/
+
+      # STEP 2: Review smoke test report.
+      - name: Review Smoke Test Report
+        run: |
+          echo "===== Smoke Test Report ====="
+          cat reports/smoke-test-report.txt
+
+      # STEP 3: Review Docker logs.
+      - name: Review Container Logs
+        run: |
+          echo "===== Container Logs ====="
+          cat reports/container-logs.txt
