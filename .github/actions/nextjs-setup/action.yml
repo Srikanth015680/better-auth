@@ -1,0 +1,172 @@
+
+# ============================================================
+# CUSTOM COMPOSITE ACTION: NEXT.JS DOCKER BUILD AND PUSH
+# ============================================================
+
+# Name of the Composite Action.
+name: Next.js Docker Build and Push
+
+# Description of what this action does.
+description: Install dependencies, build Next.js and push Docker image
+
+
+# ============================================================
+# INPUTS
+# ============================================================
+
+# Inputs allow the calling workflow to pass custom values.
+inputs:
+
+  # Docker Hub username.
+  dockerhub-username:
+    description: Docker Hub username
+    required: true
+
+  # Docker Hub Personal Access Token.
+  # This must be passed from GitHub Secrets.
+  dockerhub-token:
+    description: Docker Hub access token
+    required: true
+
+  # Docker image repository name.
+  # Example: banothsrikanth015/better-auth-gitactions
+  image-name:
+    description: Docker image repository
+    required: true
+
+  # Docker image tag.
+  # Example: latest, v1.0.0, or GitHub run number.
+  image-tag:
+    description: Docker image tag
+    required: false
+    default: latest
+
+  # Node.js version used by the application.
+  node-version:
+    description: Node.js version
+    required: false
+    default: "22"
+
+
+# ============================================================
+# RUNS
+# ============================================================
+
+# Defines how this Composite Action executes.
+runs:
+
+  # Identifies this as a Composite Action.
+  using: composite
+
+  # Steps executed in order.
+  steps:
+
+
+    # --------------------------------------------------------
+    # STEP 1: SETUP NODE.JS
+    # --------------------------------------------------------
+
+    - name: Setup Node.js
+
+      # Install Node.js using the official GitHub Action.
+      uses: actions/setup-node@v6
+
+      with:
+
+        # Read the Node.js version from the input.
+        node-version: ${{ inputs.node-version }}
+
+        # Enable npm dependency download caching.
+        cache: npm
+
+
+    # --------------------------------------------------------
+    # STEP 2: INSTALL NPM DEPENDENCIES
+    # --------------------------------------------------------
+
+    - name: Install Dependencies
+
+      # npm ci installs dependencies exactly from package-lock.json.
+      # It is recommended for reproducible CI builds.
+      run: npm ci
+
+      # Composite Action run steps must specify a shell.
+      shell: bash
+
+
+    # --------------------------------------------------------
+    # STEP 3: GENERATE PRISMA CLIENT
+    # --------------------------------------------------------
+
+    - name: Generate Prisma Client
+
+      # Generate Prisma Client using your Prisma schema.
+      run: npx prisma generate
+
+      shell: bash
+
+
+    # --------------------------------------------------------
+    # STEP 4: BUILD NEXT.JS APPLICATION
+    # --------------------------------------------------------
+
+    - name: Build Next.js Application
+
+      # Create the production build.
+      run: npm run build
+
+      shell: bash
+
+
+    # --------------------------------------------------------
+    # STEP 5: SETUP DOCKER BUILDX
+    # --------------------------------------------------------
+
+    - name: Setup Docker Buildx
+
+      # Configure Docker Buildx for advanced image building.
+      uses: docker/setup-buildx-action@v3
+
+
+    # --------------------------------------------------------
+    # STEP 6: LOGIN TO DOCKER HUB
+    # --------------------------------------------------------
+
+    - name: Login to Docker Hub
+
+      # Official Docker login action.
+      uses: docker/login-action@v3
+
+      with:
+
+        # Docker Hub account username.
+        username: ${{ inputs.dockerhub-username }}
+
+        # Docker Hub Personal Access Token.
+        password: ${{ inputs.dockerhub-token }}
+
+
+    # --------------------------------------------------------
+    # STEP 7: BUILD AND PUSH DOCKER IMAGE
+    # --------------------------------------------------------
+
+    - name: Build and Push Docker Image
+
+      # Official Docker action to build and push images.
+      uses: docker/build-push-action@v6
+
+      with:
+
+        # Use the current repository as Docker build context.
+        context: .
+
+        # Location of your Dockerfile.
+        file: ./Dockerfile
+
+        # Push the image to Docker Hub after building.
+        push: true
+
+        # Publish both version-specific and latest tags.
+        tags: |
+          ${{ inputs.image-name }}:${{ inputs.image-tag }}
+          ${{ inputs.image-name }}:latest

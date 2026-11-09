@@ -1,0 +1,73 @@
+
+# ============================================================
+# MAIN WORKFLOW: NEXT.JS DOCKER CI/CD
+# ============================================================
+
+name: Next.js Docker CI/CD
+
+
+# ============================================================
+# WORKFLOW TRIGGERS
+# ============================================================
+
+on:
+
+  # Automatically run when code is pushed to main.
+  push:
+    branches:
+      - main
+
+  # Allow manual execution from GitHub Actions.
+  workflow_dispatch:
+
+
+# ============================================================
+# JOBS
+# ============================================================
+
+jobs:
+
+  # Job ID.
+  docker-build-push:
+
+    # GitHub-hosted Ubuntu runner.
+    runs-on: ubuntu-latest
+
+    steps:
+
+
+      # ------------------------------------------------------
+      # STEP 1: CHECKOUT REPOSITORY
+      # ------------------------------------------------------
+
+      # Download your source code.
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+
+      # ------------------------------------------------------
+      # STEP 2: CALL COMPOSITE ACTION
+      # ------------------------------------------------------
+
+      - name: Next.js Docker Build and Push
+
+        # Local path to our Composite Action.
+        uses: ./.github/actions/nextjs-docker
+
+        # Pass inputs to the Composite Action.
+        with:
+
+          # Docker Hub username from GitHub Variables.
+          dockerhub-username: ${{ vars.DOCKERHUB_USERNAME }}
+
+          # Docker Hub token from GitHub Secrets.
+          dockerhub-token: ${{ secrets.DOCKERHUB_TOKEN }}
+
+          # Your existing Docker Hub repository.
+          image-name: banothsrikanth015/better-auth-gitactions
+
+          # Use the GitHub run number as the image tag.
+          image-tag: ${{ github.run_number }}
+
+          # Node.js version.
+          node-version: "22"

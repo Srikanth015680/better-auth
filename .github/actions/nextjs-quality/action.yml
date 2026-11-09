@@ -1,0 +1,180 @@
+
+# ============================================================
+# CUSTOM COMPOSITE ACTION: NEXT.JS QUALITY CHECK
+# ============================================================
+
+# Name displayed in GitHub Actions.
+name: Next.js Quality Check
+
+# Description of the reusable action.
+description: Install dependencies, lint, type-check, test and build Next.js
+
+
+# ============================================================
+# INPUTS
+# ============================================================
+
+# Inputs allow the calling workflow to control the action.
+inputs:
+
+  # Node.js version to use.
+  node-version:
+    description: Node.js version
+    required: false
+    default: "22"
+
+  # Decide whether to execute ESLint.
+  run-lint:
+    description: Run ESLint checks
+    required: false
+    default: "true"
+
+  # Decide whether to execute TypeScript checking.
+  run-typecheck:
+    description: Run TypeScript type checking
+    required: false
+    default: "true"
+
+  # Decide whether to execute unit tests.
+  run-tests:
+    description: Run unit tests
+    required: false
+    default: "true"
+
+  # Decide whether to build the application.
+  run-build:
+    description: Build Next.js application
+    required: false
+    default: "true"
+
+
+# ============================================================
+# RUNS
+# ============================================================
+
+runs:
+
+  # Declare this as a Composite Action.
+  using: composite
+
+  # Steps execute in the order written below.
+  steps:
+
+
+    # --------------------------------------------------------
+    # STEP 1: SETUP NODE.JS
+    # --------------------------------------------------------
+
+    - name: Setup Node.js
+
+      # Install Node.js using the official GitHub Action.
+      uses: actions/setup-node@v6
+
+      with:
+
+        # Read Node.js version from the input.
+        node-version: ${{ inputs.node-version }}
+
+        # Enable npm dependency caching.
+        # Cache files are stored between workflow runs.
+        cache: npm
+
+
+    # --------------------------------------------------------
+    # STEP 2: INSTALL DEPENDENCIES
+    # --------------------------------------------------------
+
+    - name: Install Dependencies
+
+      # Install exact dependency versions from package-lock.json.
+      run: npm ci
+
+      # Composite Action run steps require a shell.
+      shell: bash
+
+
+    # --------------------------------------------------------
+    # STEP 3: GENERATE PRISMA CLIENT
+    # --------------------------------------------------------
+
+    - name: Generate Prisma Client
+
+      # Generate Prisma Client from prisma/schema.prisma.
+      run: npx prisma generate
+
+      shell: bash
+
+
+    # --------------------------------------------------------
+    # STEP 4: RUN ESLINT
+    # --------------------------------------------------------
+
+    - name: Run ESLint
+
+      # Execute only when run-lint is true.
+      if: ${{ inputs.run-lint == 'true' }}
+
+      # Run the project's lint script.
+      run: npm run lint
+
+      shell: bash
+
+
+    # --------------------------------------------------------
+    # STEP 5: TYPESCRIPT TYPE CHECK
+    # --------------------------------------------------------
+
+    - name: TypeScript Type Check
+
+      # Execute only when run-typecheck is true.
+      if: ${{ inputs.run-typecheck == 'true' }}
+
+      # Check TypeScript without generating JavaScript files.
+      run: npx tsc --noEmit
+
+      shell: bash
+
+
+    # --------------------------------------------------------
+    # STEP 6: RUN UNIT TESTS
+    # --------------------------------------------------------
+
+    - name: Run Unit Tests
+
+      # Execute only when run-tests is true.
+      if: ${{ inputs.run-tests == 'true' }}
+
+      # Run Vitest in CI mode.
+      run: npm test -- --run
+
+      shell: bash
+
+
+    # --------------------------------------------------------
+    # STEP 7: BUILD NEXT.JS APPLICATION
+    # --------------------------------------------------------
+
+    - name: Build Next.js Application
+
+      # Execute only when run-build is true.
+      if: ${{ inputs.run-build == 'true' }}
+
+      # Generate the production build.
+      run: npm run build
+
+      shell: bash
+
+
+    # --------------------------------------------------------
+    # STEP 8: DISPLAY SUCCESS MESSAGE
+    # --------------------------------------------------------
+
+    - name: Quality Check Completed
+
+      # This step runs only if previous steps succeeded.
+      run: |
+        echo "===================================="
+        echo "NEXT.JS QUALITY CHECKS COMPLETED"
+        echo "===================================="
+
+      shell: bash

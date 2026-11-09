@@ -1,0 +1,88 @@
+
+# ============================================================
+# WORKFLOW: NEXT.JS QUALITY CHECK PIPELINE
+# ============================================================
+
+# Workflow name in GitHub Actions.
+name: Next.js Quality CI
+
+
+# ============================================================
+# TRIGGERS
+# ============================================================
+
+on:
+
+  # Execute when code is pushed to main.
+  push:
+    branches:
+      - main
+
+  # Execute when a pull request targets main.
+  pull_request:
+    branches:
+      - main
+
+  # Allow manual workflow execution.
+  workflow_dispatch:
+
+
+# ============================================================
+# PERMISSIONS
+# ============================================================
+
+# Give this workflow read-only repository access.
+permissions:
+  contents: read
+
+
+# ============================================================
+# JOBS
+# ============================================================
+
+jobs:
+
+  # Job ID.
+  quality-check:
+
+    # GitHub-hosted Ubuntu runner.
+    runs-on: ubuntu-latest
+
+    steps:
+
+
+      # ------------------------------------------------------
+      # STEP 1: CHECKOUT REPOSITORY
+      # ------------------------------------------------------
+
+      # Download the repository source code.
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+
+      # ------------------------------------------------------
+      # STEP 2: CALL QUALITY CHECK COMPOSITE ACTION
+      # ------------------------------------------------------
+
+      - name: Run Next.js Quality Checks
+
+        # Local path to our Composite Action.
+        uses: ./.github/actions/nextjs-quality
+
+        # Pass values to the Composite Action.
+        with:
+
+          # Use Node.js 22.
+          node-version: "22"
+
+          # Enable ESLint.
+          run-lint: "true"
+
+          # Enable TypeScript checking.
+          run-typecheck: "true"
+
+          # Enable unit tests.
+          run-tests: "true"
+
+          # Enable production build.
+          run-build: "true"
