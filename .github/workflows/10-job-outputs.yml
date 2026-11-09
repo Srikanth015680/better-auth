@@ -1,0 +1,42 @@
+
+name: Job Outputs Demo
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+jobs:
+
+  # Job 1: Generate application version.
+  generate-version:
+    runs-on: ubuntu-latest
+
+    # Expose the step output as a job output.
+    outputs:
+      app_version: ${{ steps.version.outputs.app_version }}
+
+    steps:
+      - name: Generate Version
+        id: version
+        run: |
+          APP_VERSION="2.0.0"
+          echo "app_version=$APP_VERSION" >> "$GITHUB_OUTPUT"
+
+  # Job 2: Receive output from Job 1.
+  build:
+    runs-on: ubuntu-latest
+
+    # Wait for generate-version to finish.
+    needs: generate-version
+
+    steps:
+      - name: Display Received Version
+        run: |
+          echo "Received version: ${{ needs.generate-version.outputs.app_version }}"
+
+      - name: Build Application
+        run: |
+          echo "Building version ${{ needs.generate-version.outputs.app_version }}"
