@@ -1,0 +1,301 @@
+
+# ============================================================
+# WORKFLOW NAME
+# ============================================================
+
+# Name displayed in the GitHub Actions interface.
+name: Next.js Environment Deployment
+
+
+# ============================================================
+# WORKFLOW TRIGGERS
+# ============================================================
+
+# Defines when this workflow starts.
+on:
+
+  # Automatically execute when code is pushed.
+  push:
+
+    # Only trigger for the main branch.
+    branches:
+      - main
+
+  # Also allow manual execution.
+  workflow_dispatch:
+
+
+# ============================================================
+# PERMISSIONS
+# ============================================================
+
+# Defines the permissions available to the workflow's GITHUB_TOKEN.
+permissions:
+
+  # Allows checkout and reading repository contents.
+  contents: read
+
+
+# ============================================================
+# JOBS
+# ============================================================
+
+jobs:
+
+
+  # ==========================================================
+  # JOB 1: BUILD NEXT.JS APPLICATION
+  # ==========================================================
+
+  # This job builds the application only once.
+  build:
+
+    # GitHub provides an Ubuntu runner.
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # ------------------------------------------------------
+      # STEP 1: CHECKOUT
+      # ------------------------------------------------------
+
+      # Download source code from the GitHub repository.
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+
+      # ------------------------------------------------------
+      # STEP 2: SETUP NODE.JS
+      # ------------------------------------------------------
+
+      # Install Node.js on the GitHub runner.
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+
+          # Use Node.js version 22.
+          node-version: "22"
+
+          # Enable npm dependency caching.
+          cache: npm
+
+
+      # ------------------------------------------------------
+      # STEP 3: INSTALL DEPENDENCIES
+      # ------------------------------------------------------
+
+      # npm ci installs dependencies from package-lock.json.
+      - name: Install Dependencies
+        run: npm ci
+
+
+      # ------------------------------------------------------
+      # STEP 4: GENERATE PRISMA CLIENT
+      # ------------------------------------------------------
+
+      # Generate Prisma Client using your Prisma schema.
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+
+      # ------------------------------------------------------
+      # STEP 5: BUILD NEXT.JS
+      # ------------------------------------------------------
+
+      # Execute the production build command.
+      - name: Build Next.js Application
+        run: npm run build
+
+
+      # ------------------------------------------------------
+      # STEP 6: UPLOAD BUILD ARTIFACT
+      # ------------------------------------------------------
+
+      # Upload build output so deployment jobs can download it.
+      - name: Upload Next.js Build Artifact
+        uses: actions/upload-artifact@v7
+        with:
+
+          # Name used to identify this artifact.
+          name: nextjs-build
+
+          # Files and directories to upload.
+          #
+          # .next/standalone is generated when
+          # output: "standalone" is enabled in next.config.ts.
+          #
+          # .next/static contains static build assets.
+          path: |
+            .next/standalone/
+            .next/static/
+
+          # Keep the artifact for five days.
+          retention-days: 5
+
+
+  # ==========================================================
+  # JOB 2: DEVELOPMENT DEPLOYMENT
+  # ==========================================================
+
+  deploy-development:
+
+    # Use an Ubuntu runner.
+    runs-on: ubuntu-latest
+
+    # Wait until the build job succeeds.
+    needs: build
+
+    # Associate this job with the development environment.
+    #
+    # GitHub loads variables and secrets configured
+    # under Settings -> Environments -> development.
+    environment:
+      name: development
+
+      # URL displayed in the deployment environment information.
+      url: ${{ vars.APP_URL }}
+
+    steps:
+
+      # Download the build artifact created by the build job.
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: nextjs-build
+          path: deployment/
+
+      # Make environment-specific configuration available
+      # to this step through environment variables.
+      - name: Development Deployment Configuration
+        env:
+
+          # Non-sensitive development application URL.
+          APP_URL: ${{ vars.APP_URL }}
+
+          # Sensitive development database connection.
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+          # Sensitive Better Auth secret.
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+
+          # Deployment credential for the hosting provider.
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+
+        run: |
+          echo "Deploying to Development"
+          echo "Application URL: $APP_URL"
+
+          # Check that required credentials exist.
+          # Do not print their actual values.
+          test -n "$DATABASE_URL"
+          test -n "$BETTER_AUTH_SECRET"
+          test -n "$DEPLOY_TOKEN"
+
+          # Demonstration only:
+          # Replace this with your hosting provider's
+          # actual deployment command.
+          echo "Development deployment configuration is ready."
+
+
+  # ==========================================================
+  # JOB 3: STAGING DEPLOYMENT
+  # ==========================================================
+
+  deploy-staging:
+
+    # Use an Ubuntu runner.
+    runs-on: ubuntu-latest
+
+    # Staging runs only after development deployment succeeds.
+    needs: deploy-development
+
+    # Associate this job with the staging environment.
+    environment:
+      name: staging
+      url: ${{ vars.APP_URL }}
+
+    steps:
+
+      # Download the SAME build artifact.
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: nextjs-build
+          path: deployment/
+
+      # Load staging-specific variables and secrets.
+      - name: Staging Deployment Configuration
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+
+        run: |
+          echo "Deploying to Staging"
+          echo "Application URL: $APP_URL"
+
+          # Verify required credentials exist.
+          test -n "$DATABASE_URL"
+          test -n "$BETTER_AUTH_SECRET"
+          test -n "$DEPLOY_TOKEN"
+
+          # Demonstration only:
+          # Replace this with your real staging deployment command.
+          echo "Staging deployment configuration is ready."
+
+
+  # ==========================================================
+  # JOB 4: PRODUCTION DEPLOYMENT
+  # ==========================================================
+
+  deploy-production:
+
+    # Use an Ubuntu runner.
+    runs-on: ubuntu-latest
+
+    # Production starts only after staging succeeds.
+    needs: deploy-staging
+
+    # Associate this job with the production environment.
+    #
+    # GitHub evaluates the production protection rules here.
+    #
+    # If required reviewers are configured, the job waits
+    # for approval before its steps start.
+    environment:
+      name: production
+      url: ${{ vars.APP_URL }}
+
+    steps:
+
+      # Download the SAME build artifact used in
+      # development and staging.
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: nextjs-build
+          path: deployment/
+
+      # Load production-specific configuration.
+      - name: Production Deployment Configuration
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+
+        run: |
+          echo "Deploying to Production"
+          echo "Application URL: $APP_URL"
+
+          # Check that production credentials exist.
+          # Never print secret values.
+          test -n "$DATABASE_URL"
+          test -n "$BETTER_AUTH_SECRET"
+          test -n "$DEPLOY_TOKEN"
+
+          # Demonstration only:
+          # Replace this with your actual production
+          # deployment command.
+          echo "Production deployment configuration is ready."
