@@ -1,0 +1,69 @@
+
+name: Next.js Artifact Demo
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+jobs:
+
+  # JOB 1: Build the Next.js application.
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Download source code.
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      # Install Node.js.
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+
+      # Install project dependencies.
+      - name: Install Dependencies
+        run: npm ci
+
+      # Generate Prisma Client.
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      # Build Next.js application.
+      - name: Build Application
+        run: npm run build
+
+      # Upload the generated Next.js build directory.
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: nextjs-build
+          path: .next/
+          if-no-files-found: error
+          retention-days: 5
+
+  # JOB 2: Download the artifact from Job 1.
+  deploy:
+    runs-on: ubuntu-latest
+
+    # Wait for build job to finish.
+    needs: build
+
+    steps:
+      # Download the artifact.
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: nextjs-build
+          path: .next/
+
+      # Verify downloaded files.
+      - name: Display Downloaded Files
+        run: |
+          echo "Downloaded Next.js build:"
+          ls -lah .next/
