@@ -1,0 +1,419 @@
+
+# ============================================================
+# WORKFLOW NAME
+# ============================================================
+
+# This is the name displayed in GitHub Actions.
+name: Next.js Caching Across Jobs
+
+
+# ============================================================
+# WORKFLOW TRIGGERS
+# ============================================================
+
+# "on" defines WHEN this workflow should execute.
+on:
+
+  # Trigger 1: Execute when code is pushed.
+  push:
+
+    # Only execute when code is pushed to the main branch.
+    branches:
+      - main
+
+  # Trigger 2: Allow manually starting the workflow
+  # from GitHub Actions -> Run workflow.
+  workflow_dispatch:
+
+
+# ============================================================
+# JOBS
+# ============================================================
+
+# Jobs are independent units of work inside a workflow.
+# Each GitHub-hosted job normally gets a separate runner.
+jobs:
+
+
+  # ==========================================================
+  # JOB 1: BUILD APPLICATION
+  # ==========================================================
+
+  # "build-job" is the unique ID of this job.
+  build-job:
+
+    # "runs-on" specifies which machine executes this job.
+    # ubuntu-latest means GitHub provides a latest Ubuntu runner.
+    runs-on: ubuntu-latest
+
+    # "steps" contains the individual tasks executed by this job.
+    # Steps execute sequentially, from top to bottom.
+    steps:
+
+      # ------------------------------------------------------
+      # STEP 1: CHECKOUT REPOSITORY
+      # ------------------------------------------------------
+
+      - name: Checkout Repository
+
+        # "uses" executes an existing GitHub Action.
+        # actions/checkout downloads your repository source code
+        # into the runner's working directory.
+        uses: actions/checkout@v6
+
+
+      # ------------------------------------------------------
+      # STEP 2: SETUP NODE.JS
+      # ------------------------------------------------------
+
+      - name: Setup Node.js
+
+        # setup-node installs and configures Node.js.
+        uses: actions/setup-node@v6
+
+        # "with" passes configuration values to the action.
+        with:
+
+          # Install Node.js version 22.
+          node-version: "22"
+
+
+      # ------------------------------------------------------
+      # STEP 3: RESTORE NPM CACHE
+      # ------------------------------------------------------
+
+      - name: Restore npm Cache
+
+        # "id" gives this step a unique identifier.
+        # We can use this ID to access its outputs later.
+        id: npm-cache
+
+        # actions/cache restores or saves cached files.
+        uses: actions/cache@v6
+
+        with:
+
+          # --------------------------------------------------
+          # PATH
+          # --------------------------------------------------
+
+          # "path" specifies WHICH files or directories
+          # should be stored in the cache.
+          #
+          # ~/.npm is npm's local package download cache.
+          # It contains downloaded package data.
+          #
+          # We cache ~/.npm instead of node_modules
+          # because npm ci recreates node_modules.
+          path: ~/.npm
+
+
+          # --------------------------------------------------
+          # KEY
+          # --------------------------------------------------
+
+          # "key" is the UNIQUE IDENTIFIER of a cache.
+          #
+          # GitHub uses this key to search for an existing cache.
+          #
+          # runner.os:
+          # Identifies the operating system of the runner.
+          # Example: Linux
+          #
+          # node22:
+          # Our own label identifying the Node.js version.
+          #
+          # npm:
+          # Our own label identifying this as an npm cache.
+          #
+          # hashFiles('package-lock.json'):
+          # Calculates a hash based on package-lock.json.
+          #
+          # If package-lock.json changes, the hash usually changes.
+          #
+          # Example cache key:
+          # Linux-node22-npm-a1b2c3d4
+          #
+          # The complete expression is evaluated by GitHub Actions.
+          key: ${{ runner.os }}-node22-npm-${{ hashFiles('package-lock.json') }}
+
+
+          # --------------------------------------------------
+          # RESTORE-KEYS
+          # --------------------------------------------------
+
+          # "restore-keys" defines FALLBACK cache keys.
+          #
+          # GitHub first searches for an exact match using "key".
+          #
+          # If the exact key is unavailable, GitHub tries
+          # the restore-keys prefixes.
+          #
+          # Here, Linux-node22-npm- is a prefix.
+          #
+          # GitHub can restore a compatible cache whose key
+          # begins with this prefix.
+          #
+          # The trailing hyphen separates the prefix from
+          # the hash portion of the cache key.
+          #
+          # IMPORTANT:
+          # A fallback cache is not an exact cache match.
+          # A new cache can be saved using the current exact key.
+          restore-keys: |
+            ${{ runner.os }}-node22-npm-
+
+
+      # ------------------------------------------------------
+      # STEP 4: INSTALL DEPENDENCIES
+      # ------------------------------------------------------
+
+      - name: Install Dependencies
+
+        # npm ci installs dependencies from package-lock.json.
+        #
+        # It creates a clean node_modules directory.
+        #
+        # npm can reuse downloaded package data from ~/.npm.
+        #
+        # This improves installation speed when cached
+        # package downloads are available.
+        run: npm ci
+
+
+      # ------------------------------------------------------
+      # STEP 5: GENERATE PRISMA CLIENT
+      # ------------------------------------------------------
+
+      - name: Generate Prisma Client
+
+        # Generates Prisma Client based on your Prisma schema.
+        #
+        # Your Next.js application can then use Prisma Client
+        # to communicate with the database.
+        run: npx prisma generate
+
+
+      # ------------------------------------------------------
+      # STEP 6: BUILD NEXT.JS APPLICATION
+      # ------------------------------------------------------
+
+      - name: Build Next.js Application
+
+        # Executes the build script defined in package.json.
+        #
+        # Usually runs the Next.js production build.
+        run: npm run build
+
+
+
+  # ==========================================================
+  # JOB 2: TEST APPLICATION
+  # ==========================================================
+
+  # This job tests the Next.js application.
+  test-job:
+
+    # Use a separate GitHub-hosted Ubuntu runner.
+    runs-on: ubuntu-latest
+
+    # "needs" defines a dependency between jobs.
+    #
+    # This job starts only after build-job succeeds.
+    #
+    # Without needs, independent jobs can run in parallel.
+    needs: build-job
+
+    steps:
+
+      # ------------------------------------------------------
+      # STEP 1: CHECKOUT REPOSITORY
+      # ------------------------------------------------------
+
+      - name: Checkout Repository
+
+        # Download the repository source code
+        # into this job's separate runner.
+        uses: actions/checkout@v6
+
+
+      # ------------------------------------------------------
+      # STEP 2: SETUP NODE.JS
+      # ------------------------------------------------------
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+
+        with:
+
+          # Use the same Node.js version as Job 1.
+          node-version: "22"
+
+
+      # ------------------------------------------------------
+      # STEP 3: RESTORE NPM CACHE
+      # ------------------------------------------------------
+
+      - name: Restore npm Cache
+
+        # ID used to access the cache action's outputs.
+        id: npm-cache
+
+        # Restore the npm cache created by Job 1.
+        uses: actions/cache@v6
+
+        with:
+
+          # Directory containing npm's downloaded packages.
+          path: ~/.npm
+
+          # Use the SAME cache key as Job 1.
+          #
+          # If the package-lock.json and OS are unchanged,
+          # GitHub can find the cache saved by build-job.
+          key: ${{ runner.os }}-node22-npm-${{ hashFiles('package-lock.json') }}
+
+          # If the exact cache does not exist,
+          # search using this fallback prefix.
+          restore-keys: |
+            ${{ runner.os }}-node22-npm-
+
+
+      # ------------------------------------------------------
+      # STEP 4: INSTALL DEPENDENCIES
+      # ------------------------------------------------------
+
+      - name: Install Dependencies
+
+        # Install dependencies using npm ci.
+        # Cached package downloads can reduce network downloads.
+        run: npm ci
+
+
+      # ------------------------------------------------------
+      # STEP 5: GENERATE PRISMA CLIENT
+      # ------------------------------------------------------
+
+      - name: Generate Prisma Client
+
+        # Generate Prisma Client before running tests
+        # that depend on it.
+        run: npx prisma generate
+
+
+      # ------------------------------------------------------
+      # STEP 6: RUN TESTS
+      # ------------------------------------------------------
+
+      - name: Run Tests
+
+        # Execute the test script from package.json.
+        #
+        # Make sure your package.json contains a "test" script.
+        run: npm test
+
+
+
+  # ==========================================================
+  # JOB 3: SECURITY SCAN
+  # ==========================================================
+
+  # This job checks production dependencies for known vulnerabilities.
+  security-scan-job:
+
+    # Run this job on an Ubuntu runner.
+    runs-on: ubuntu-latest
+
+    # Wait until test-job completes successfully.
+    needs: test-job
+
+    steps:
+
+      # ------------------------------------------------------
+      # STEP 1: CHECKOUT REPOSITORY
+      # ------------------------------------------------------
+
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+
+      # ------------------------------------------------------
+      # STEP 2: SETUP NODE.JS
+      # ------------------------------------------------------
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+
+        with:
+
+          # Use Node.js version 22.
+          node-version: "22"
+
+
+      # ------------------------------------------------------
+      # STEP 3: RESTORE NPM CACHE
+      # ------------------------------------------------------
+
+      - name: Restore npm Cache
+
+        # Give this step an ID.
+        id: npm-cache
+
+        # Restore the same npm cache used by previous jobs.
+        uses: actions/cache@v6
+
+        with:
+
+          # Cache directory.
+          path: ~/.npm
+
+          # Same cache key used in the previous jobs.
+          key: ${{ runner.os }}-node22-npm-${{ hashFiles('package-lock.json') }}
+
+          # Fallback cache prefix.
+          restore-keys: |
+            ${{ runner.os }}-node22-npm-
+
+
+      # ------------------------------------------------------
+      # STEP 4: INSTALL DEPENDENCIES
+      # ------------------------------------------------------
+
+      - name: Install Dependencies
+
+        # Install dependencies using the restored npm cache.
+        run: npm ci
+
+
+      # ------------------------------------------------------
+      # STEP 5: SECURITY AUDIT
+      # ------------------------------------------------------
+
+      - name: Run Security Audit
+
+        # npm audit checks dependencies against known
+        # security vulnerability advisories.
+        #
+        # --omit=dev means audit production dependencies
+        # rather than development dependencies.
+        #
+        # npm audit can return a non-zero exit code
+        # when vulnerabilities are detected.
+        run: npm audit --omit=dev
+
+
+      # ------------------------------------------------------
+      # STEP 6: DISPLAY CACHE STATUS
+      # ------------------------------------------------------
+
+      - name: Display Cache Status
+
+        # Read the output from the step whose ID is npm-cache.
+        run: |
+          echo "Cache hit: ${{ steps.npm-cache.outputs.cache-hit }}"
+
+          # true  = Exact cache key was restored.
+          # false = Exact cache key was not restored.
+          #
+          # A fallback cache might still have been restored
+          # even when cache-hit is false.
