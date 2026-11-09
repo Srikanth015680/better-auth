@@ -1,0 +1,49 @@
+
+# Name of our custom action.
+name: Application Information
+
+# Description of this custom action.
+description: "Display application information"
+
+# Define inputs accepted by this action.
+inputs:
+
+  # Input 1: Application name.
+  app_name:
+    description: "Name of the application"
+    required: true
+
+  # Input 2: Deployment environment.
+  environment:
+    description: "Deployment environment"
+    required: true
+    default: "development"
+
+  # Input 3: Application version.
+  app_version:
+    description: "Application version"
+    required: false
+    default: "1.0.0"
+
+# Define how this action executes.
+runs:
+  using: composite
+
+  steps:
+    # Step 1: Display application name.
+    - name: Display Application Name
+      shell: bash
+      run: |
+        echo "Application: ${{ inputs.app_name }}"
+
+    # Step 2: Display environment.
+    - name: Display Environment
+      shell: bash
+      run: |
+        echo "Environment: ${{ inputs.environment }}"
+
+    # Step 3: Display application version.
+    - name: Display Version
+      shell: bash
+      run: |
+        echo "Version: ${{ inputs.app_version }}"

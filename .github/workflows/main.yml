@@ -1,10 +1,54 @@
-name: Main Workflow
+# name: Main Workflow
+
+# on:
+#   push:
+#     branches:
+#       - main
+
+# jobs:
+#   call-workflow:
+#     uses: ./.github/workflows/reusable.yml
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+name: Custom Action Inputs Demo
 
 on:
   push:
     branches:
       - main
 
+  workflow_dispatch:
+
 jobs:
-  call-workflow:
-    uses: ./.github/workflows/reusable.yml
+  app-info:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Download repository code.
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      # Call our local custom action.
+      - name: Run Application Information Action
+        uses: ./.github/actions/app-info
+
+        # Pass values to the custom action.
+        with:
+          app_name: "Better Auth"
+          environment: "production"
+          app_version: "2.0.0"
