@@ -1,0 +1,269 @@
+
+# ============================================================
+# WORKFLOW NAME
+# ============================================================
+
+# Name displayed in GitHub Actions.
+name: Next.js Complete Matrix Strategy
+
+
+# ============================================================
+# WORKFLOW TRIGGERS
+# ============================================================
+
+# Defines when this workflow should execute.
+on:
+
+  # Automatically execute when code is pushed.
+  push:
+
+    # Only trigger for pushes to the main branch.
+    branches:
+      - main
+
+  # Allows manual execution from GitHub Actions.
+  workflow_dispatch:
+
+
+# ============================================================
+# JOBS
+# ============================================================
+
+jobs:
+
+  # ==========================================================
+  # MATRIX TEST JOB
+  # ==========================================================
+
+  # Job ID: test
+  test:
+
+    # --------------------------------------------------------
+    # STRATEGY
+    # --------------------------------------------------------
+
+    # strategy controls how GitHub executes multiple
+    # combinations of this job.
+    strategy:
+
+      # ------------------------------------------------------
+      # FAIL-FAST
+      # ------------------------------------------------------
+
+      # true:
+      # If one matrix job fails, GitHub cancels other
+      # running or queued matrix jobs.
+      #
+      # false:
+      # Other matrix jobs continue even if one fails.
+      #
+      # We use false so we can see test results
+      # for all combinations.
+      fail-fast: false
+
+
+      # ------------------------------------------------------
+      # MAX-PARALLEL
+      # ------------------------------------------------------
+
+      # Controls the maximum number of matrix jobs
+      # that can run simultaneously.
+      #
+      # Example:
+      # max-parallel: 2 means at most two jobs run
+      # at the same time.
+      #
+      # Other jobs wait until a running job finishes.
+      max-parallel: 2
+
+
+      # ------------------------------------------------------
+      # MATRIX
+      # ------------------------------------------------------
+
+      # Matrix defines the values used to create jobs.
+      matrix:
+
+        # ----------------------------------------------------
+        # MATRIX VARIABLE 1: NODE VERSION
+        # ----------------------------------------------------
+
+        # GitHub creates combinations using these Node.js versions.
+        node-version: [22, 24]
+
+
+        # ----------------------------------------------------
+        # MATRIX VARIABLE 2: OPERATING SYSTEM
+        # ----------------------------------------------------
+
+        # Test the application on these operating systems.
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+
+
+        # ----------------------------------------------------
+        # INCLUDE
+        # ----------------------------------------------------
+
+        # include allows us to add extra properties
+        # to matching matrix combinations.
+        #
+        # Here, Node.js 24 combinations receive:
+        # experimental: true
+        #
+        # The original matrix combinations are retained.
+        include:
+
+          - node-version: 24
+            experimental: true
+
+
+        # ----------------------------------------------------
+        # EXCLUDE
+        # ----------------------------------------------------
+
+        # exclude removes specific combinations
+        # from the original matrix.
+        #
+        # Here we remove:
+        # Windows + Node.js 22.
+        #
+        # Other combinations remain.
+        exclude:
+
+          - os: windows-latest
+            node-version: 22
+
+
+    # --------------------------------------------------------
+    # RUNS-ON
+    # --------------------------------------------------------
+
+    # Select the operating system for each generated job.
+    #
+    # matrix.os changes for each matrix combination.
+    #
+    # Example:
+    # ubuntu-latest
+    # windows-latest
+    # macos-latest
+    runs-on: ${{ matrix.os }}
+
+
+    # --------------------------------------------------------
+    # CONTINUE-ON-ERROR
+    # --------------------------------------------------------
+
+    # If a matrix combination has experimental: true,
+    # its failure will not fail the overall workflow.
+    #
+    # If experimental is missing, the expression evaluates
+    # to an empty/null-like value, treated as false.
+    continue-on-error: ${{ matrix.experimental == true }}
+
+
+    # ========================================================
+    # STEPS
+    # ========================================================
+
+    # Steps execute sequentially inside each matrix job.
+    steps:
+
+
+      # ------------------------------------------------------
+      # STEP 1: CHECKOUT
+      # ------------------------------------------------------
+
+      - name: Checkout Repository
+
+        # Downloads repository source code into the runner.
+        uses: actions/checkout@v6
+
+
+      # ------------------------------------------------------
+      # STEP 2: SETUP NODE.JS
+      # ------------------------------------------------------
+
+      - name: Setup Node.js
+
+        # Installs the Node.js version for this combination.
+        uses: actions/setup-node@v6
+
+        with:
+
+          # Read the Node.js version from the matrix.
+          #
+          # One job receives 22.
+          # Another job receives 24.
+          node-version: ${{ matrix.node-version }}
+
+          # Enables npm dependency caching.
+          cache: npm
+
+
+      # ------------------------------------------------------
+      # STEP 3: DISPLAY MATRIX VALUES
+      # ------------------------------------------------------
+
+      - name: Display Matrix Information
+
+        # run executes shell commands on the runner.
+        run: |
+          echo "Operating System: ${{ matrix.os }}"
+          echo "Node.js Version: ${{ matrix.node-version }}"
+          echo "Experimental: ${{ matrix.experimental }}"
+
+
+      # ------------------------------------------------------
+      # STEP 4: INSTALL DEPENDENCIES
+      # ------------------------------------------------------
+
+      - name: Install Dependencies
+
+        # Installs packages using package-lock.json.
+        run: npm ci
+
+
+      # ------------------------------------------------------
+      # STEP 5: GENERATE PRISMA CLIENT
+      # ------------------------------------------------------
+
+      - name: Generate Prisma Client
+
+        # Generates Prisma Client from your Prisma schema.
+        run: npx prisma generate
+
+
+      # ------------------------------------------------------
+      # STEP 6: RUN TESTS
+      # ------------------------------------------------------
+
+      - name: Run Tests
+
+        # Executes the test script from package.json.
+        run: npm test
+
+
+      # ------------------------------------------------------
+      # STEP 7: BUILD NEXT.JS APPLICATION
+      # ------------------------------------------------------
+
+      - name: Build Next.js Application
+
+        # Executes the production build.
+        run: npm run build
+
+
+      # ------------------------------------------------------
+      # STEP 8: DISPLAY COMPLETION
+      # ------------------------------------------------------
+
+      - name: Matrix Job Completed
+
+        # Displays the matrix combination that completed.
+        run: |
+          echo "Matrix testing completed!"
+          echo "OS: ${{ matrix.os }}"
+          echo "Node: ${{ matrix.node-version }}"
