@@ -1,0 +1,70 @@
+
+name: Workflow Inputs Demo
+
+# This trigger allows us to start the workflow manually.
+on:
+  workflow_dispatch:
+    inputs:
+
+      # Input 1: Select deployment environment.
+      environment:
+        description: "Select deployment environment"
+        required: true
+        type: choice
+        default: dev
+        options:
+          - dev
+          - qa
+          - prod
+
+      # Input 2: Application version.
+      app_version:
+        description: "Enter application version"
+        required: true
+        type: string
+        default: "1.0.0"
+
+      # Input 3: Number of replicas.
+      replicas:
+        description: "Enter number of replicas"
+        required: true
+        type: number
+        default: 2
+
+      # Input 4: Enable or disable tests.
+      run_tests:
+        description: "Should tests run?"
+        required: true
+        type: boolean
+        default: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Display Input Values
+        run: |
+          echo "Environment: $ENVIRONMENT"
+          echo "App Version: $APP_VERSION"
+          echo "Replicas: $REPLICAS"
+          echo "Run Tests: $RUN_TESTS"
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+          APP_VERSION: ${{ inputs.app_version }}
+          REPLICAS: ${{ inputs.replicas }}
+          RUN_TESTS: ${{ inputs.run_tests }}
+
+      # Run tests only when the user selects true.
+      - name: Run Tests
+        if: ${{ inputs.run_tests }}
+        run: npm test
+
+      - name: Deployment Information
+        run: |
+          echo "Deploying version ${{ inputs.app_version }}"
+          echo "Target: ${{ inputs.environment }}"
+          echo "Replicas: ${{ inputs.replicas }}"
