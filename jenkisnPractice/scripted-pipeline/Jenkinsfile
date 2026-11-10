@@ -1,0 +1,46 @@
+
+#!/usr/bin/env groovy
+
+// ============================================================
+// SCRIPTED PIPELINE - NEXT.JS PROJECT
+// ============================================================
+
+// node allocates a Jenkins executor and workspace
+node {
+
+    // --------------------------------------------------------
+    // STAGE 1: BUILD
+    // --------------------------------------------------------
+    stage('Build') {
+
+        // Display a message in Jenkins console
+        echo 'Building Next.js application'
+
+        // Display the current workspace directory
+        sh 'pwd'
+    }
+
+    // --------------------------------------------------------
+    // STAGE 2: TEST
+    // --------------------------------------------------------
+    stage('Test') {
+
+        // Display a testing message
+        echo 'Testing Next.js application'
+
+        // Execute a basic Linux command
+        sh 'echo "Tests completed"'
+    }
+
+    // --------------------------------------------------------
+    // STAGE 3: DEPLOY
+    // --------------------------------------------------------
+    stage('Deploy') {
+
+        // Display deployment message
+        echo 'Deploying Next.js application'
+
+        // Execute a basic Linux command
+        sh 'echo "Deployment completed"'
+    }
+}
