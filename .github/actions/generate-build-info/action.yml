@@ -1,0 +1,149 @@
+
+# ============================================================
+# CUSTOM COMPOSITE ACTION: GENERATE BUILD INFORMATION
+# ============================================================
+
+# Name of our Composite Action.
+name: Generate Next.js Build Information
+
+# Description of the action.
+description: Generate application build metadata using GitHub Context
+
+
+# ============================================================
+# INPUTS
+# ============================================================
+
+# Inputs allow the calling workflow to pass custom values.
+inputs:
+
+  # Application name.
+  app-name:
+    description: Application name
+    required: true
+    default: Better Auth Learning
+
+
+# ============================================================
+# OUTPUTS
+# ============================================================
+
+# Outputs allow the calling workflow to receive values
+# generated inside this Composite Action.
+outputs:
+
+  # Name of the output.
+  build-info-file:
+
+    # Description of the output.
+    description: Path of the generated build information file
+
+    # Read the output from the step whose ID is build-info.
+    value: ${{ steps.generate.outputs.build-info-file }}
+
+
+# ============================================================
+# RUNS
+# ============================================================
+
+runs:
+
+  # Declare this as a Composite Action.
+  using: composite
+
+  # Steps executed in order.
+  steps:
+
+
+    # --------------------------------------------------------
+    # STEP 1: GENERATE BUILD INFORMATION
+    # --------------------------------------------------------
+
+    - name: Generate Build Information
+
+      # ID allows us to reference this step's outputs.
+      id: generate
+
+      # Multiple shell commands are executed in this block.
+      run: |
+
+        # ----------------------------------------------------
+        # READ APPLICATION INFORMATION
+        # ----------------------------------------------------
+
+        # Read application name from the custom action input.
+        APP_NAME="$APP_NAME_INPUT"
+
+        # Read application version from package.json.
+        APP_VERSION=$(node -p "require('./package.json').version")
+
+
+        # ----------------------------------------------------
+        # COLLECT GITHUB INFORMATION
+        # ----------------------------------------------------
+
+        # GitHub repository name.
+        REPOSITORY="$GITHUB_REPOSITORY"
+
+        # Git commit SHA that triggered this workflow.
+        COMMIT_SHA="$GITHUB_SHA"
+
+        # Branch or reference that triggered the workflow.
+        BRANCH="$GITHUB_REF_NAME"
+
+        # GitHub Actions workflow run number.
+        RUN_NUMBER="$GITHUB_RUN_NUMBER"
+
+        # GitHub user who triggered the workflow.
+        ACTOR="$GITHUB_ACTOR"
+
+        # Event that triggered this workflow.
+        EVENT_NAME="$GITHUB_EVENT_NAME"
+
+
+        # ----------------------------------------------------
+        # GENERATE BUILD INFORMATION FILE
+        # ----------------------------------------------------
+
+        # Create a file named build-info.txt.
+        # The > operator creates or overwrites the file.
+        {
+          echo "===================================="
+          echo "       APPLICATION BUILD INFO       "
+          echo "===================================="
+          echo ""
+          echo "Application Name: $APP_NAME"
+          echo "Application Version: $APP_VERSION"
+          echo "Repository: $REPOSITORY"
+          echo "Branch: $BRANCH"
+          echo "Commit SHA: $COMMIT_SHA"
+          echo "Workflow Run Number: $RUN_NUMBER"
+          echo "Triggered By: $ACTOR"
+          echo "Event Name: $EVENT_NAME"
+          echo ""
+          echo "Build Generated Successfully"
+          echo "===================================="
+        } > build-info.txt
+
+
+        # ----------------------------------------------------
+        # DISPLAY GENERATED INFORMATION
+        # ----------------------------------------------------
+
+        # Print the contents of build-info.txt in workflow logs.
+        cat build-info.txt
+
+
+        # ----------------------------------------------------
+        # SET COMPOSITE ACTION OUTPUT
+        # ----------------------------------------------------
+
+        # Return the generated file path to the caller.
+        echo "build-info-file=build-info.txt" >> "$GITHUB_OUTPUT"
+
+      # Pass the action input to the shell as an environment variable.
+      env:
+        APP_NAME_INPUT: ${{ inputs.app-name }}
+
+      # Every run step in a Composite Action needs a shell.
+      shell: bash
