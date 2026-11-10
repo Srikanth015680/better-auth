@@ -1,0 +1,89 @@
+# ============================================================
+# WORKFLOW: NEXT.JS PROJECT CI
+# ============================================================
+
+# Name displayed in GitHub Actions.
+name: Next.js JavaScript Action Demo
+
+
+# ============================================================
+# TRIGGERS
+# ============================================================
+
+on:
+
+  # Run whenever code is pushed to main.
+  push:
+    branches:
+      - main
+
+  # Allow manual execution from GitHub Actions.
+  workflow_dispatch:
+
+
+# ============================================================
+# JOBS
+# ============================================================
+
+jobs:
+
+  # Job ID.
+  nextjs-quality-check:
+
+    # GitHub-hosted Ubuntu runner.
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # ------------------------------------------------------
+      # STEP 1: CHECKOUT REPOSITORY
+      # ------------------------------------------------------
+
+      - name: Checkout Repository
+
+        # Download repository files onto the runner.
+        uses: actions/checkout@v6
+
+
+      # ------------------------------------------------------
+      # STEP 2: SETUP NODE.JS
+      # ------------------------------------------------------
+
+      - name: Setup Node.js
+
+        # Install Node.js for our project workflow commands.
+        uses: actions/setup-node@v6
+
+        with:
+          node-version: "22"
+
+
+      # ------------------------------------------------------
+      # STEP 3: RUN OUR CUSTOM JAVASCRIPT ACTION
+      # ------------------------------------------------------
+
+      - name: Get Next.js Project Information
+
+        # Execute our local custom JavaScript Action.
+        uses: ./.github/actions/nextjs-project-info
+
+        # Give this step an ID so later steps can access outputs.
+        id: project-info
+
+        with:
+
+          # Pass the location of the project's package.json.
+          package-json: package.json
+
+
+      # ------------------------------------------------------
+      # STEP 4: DISPLAY ACTION OUTPUTS
+      # ------------------------------------------------------
+
+      - name: Display Project Information
+
+        # Print the values returned by our custom action.
+        run: |
+          echo "Project Name: ${{ steps.project-info.outputs.project-name }}"
+          echo "Project Version: ${{ steps.project-info.outputs.project-version }}"
+          echo "Next.js Version: ${{ steps.project-info.outputs.next-version }}"
