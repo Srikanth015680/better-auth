@@ -1,0 +1,146 @@
+
+# ============================================================
+# NEXT.JS MATRIX TESTING WITH CONCURRENCY
+# ============================================================
+
+name: Next.js Matrix Testing
+
+
+# ============================================================
+# 1. WORKFLOW TRIGGERS
+# ============================================================
+
+on:
+
+  # Run when code is pushed to main or develop.
+  push:
+    branches:
+      - main
+      - develop
+
+  # Run when a pull request targets main.
+  pull_request:
+    branches:
+      - main
+
+  # Allow manual execution.
+  workflow_dispatch:
+
+
+# ============================================================
+# 2. WORKFLOW-LEVEL CONCURRENCY
+# ============================================================
+
+concurrency:
+
+  # Create a separate group for each branch and workflow.
+  #
+  # Example:
+  # main branch   -> Next.js Matrix Testing-refs/heads/main
+  # develop branch -> Next.js Matrix Testing-refs/heads/develop
+  #
+  # Pull requests use their merge reference.
+  group: ${{ github.workflow }}-${{ github.ref }}
+
+  # Cancel older running workflow runs for the same group.
+  # Newer commits should be tested instead of outdated commits.
+  cancel-in-progress: true
+
+
+# ============================================================
+# 3. JOBS
+# ============================================================
+
+jobs:
+
+  # ----------------------------------------------------------
+  # JOB 1: MATRIX TESTING
+  # ----------------------------------------------------------
+
+  test:
+
+    # GitHub-hosted runner operating system.
+    # Each matrix combination gets its own job execution.
+    runs-on: ${{ matrix.os }}
+
+    # --------------------------------------------------------
+    # MATRIX STRATEGY
+    # --------------------------------------------------------
+
+    strategy:
+
+      # Do not cancel all other matrix jobs if one fails.
+      #
+      # Example:
+      # Ubuntu test fails.
+      # Windows and macOS tests can continue.
+      fail-fast: false
+
+      # Run at most 3 matrix jobs simultaneously.
+      max-parallel: 3
+
+      # Define all testing combinations.
+      matrix:
+
+        # Test on these operating systems.
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+
+        # Test with these Node.js versions.
+        node-version:
+          - "22"
+          - "24"
+
+
+    # --------------------------------------------------------
+    # STEPS
+    # --------------------------------------------------------
+
+    steps:
+
+      # Checkout repository code.
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+
+      # Setup the Node.js version for this matrix combination.
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+
+      # Install project dependencies.
+      - name: Install Dependencies
+        run: npm ci
+
+
+      # Generate Prisma Client.
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+
+      # Run TypeScript validation.
+      - name: TypeScript Check
+        run: npx tsc --noEmit
+
+
+      # Run project tests.
+      - name: Run Tests
+        run: npm test
+
+
+      # Build the Next.js application.
+      - name: Build Next.js
+        run: npm run build
+
+
+      # Display the current matrix combination.
+      - name: Display Test Environment
+        run: |
+          echo "Operating System: ${{ matrix.os }}"
+          echo "Node.js Version: ${{ matrix.node-version }}"
+          echo "Matrix testing completed."
