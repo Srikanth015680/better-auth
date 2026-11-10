@@ -1,20 +1,46 @@
-pipeline{
+
+pipeline {
+
+    // Run on any available Jenkins agent
     agent any
-    stages{
-        stage('Build'){
-            steps{
-                echo "Building"
+
+    // Define pipeline stages
+    stages {
+
+        // Stage 1: Build
+        stage('Build') {
+            steps {
+                echo 'Building Next.js application'
             }
         }
-        stage('Test'){
-            steps{
-                echo "Testing"
+
+        // Stage 2: Test
+        stage('Test') {
+            steps {
+                echo 'Testing Next.js application'
             }
         }
-        stage('Build'){
-            steps:{
-                echo "Deploy"
+
+        // Stage 3: Deploy
+        stage('Deploy') {
+            steps {
+                echo 'Deploying Next.js application'
             }
+        }
+    }
+
+    // Execute after pipeline completion
+    post {
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+
+        failure {
+            echo 'Pipeline failed!'
+        }
+
+        always {
+            echo 'Pipeline execution finished.'
         }
     }
 }
