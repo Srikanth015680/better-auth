@@ -1,0 +1,15 @@
+{
+  "name": "nextjs-project-info-action",
+  "version": "1.0.0",
+  "description": "A custom JavaScript GitHub Action to validate Next.js project information",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "ncc build index.js -o dist"
+  },
+  "dependencies": {
+    "@actions/core": "^2.0.2"
+  },
+  "devDependencies": {
+    "@vercel/ncc": "^0.38.4"
+  }
+}
