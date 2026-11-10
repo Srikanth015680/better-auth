@@ -1,0 +1,75 @@
+# ============================================================
+# WORKFLOW: NEXT.JS DOCKER ACTION DEMO
+# ============================================================
+
+name: Next.js Docker Action Demo
+
+
+# ============================================================
+# WORKFLOW TRIGGERS
+# ============================================================
+
+on:
+
+  # Execute when code is pushed to main.
+  push:
+    branches:
+      - main
+
+  # Allow manual execution.
+  workflow_dispatch:
+
+
+# ============================================================
+# JOBS
+# ============================================================
+
+jobs:
+
+  # Job responsible for checking the Next.js project.
+  nextjs-docker-check:
+
+    # Use a GitHub-hosted Ubuntu machine.
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # ------------------------------------------------------
+      # STEP 1: CHECKOUT REPOSITORY
+      # ------------------------------------------------------
+
+      - name: Checkout Repository
+
+        # Download repository source code.
+        uses: actions/checkout@v6
+
+
+      # ------------------------------------------------------
+      # STEP 2: EXECUTE CUSTOM DOCKER ACTION
+      # ------------------------------------------------------
+
+      - name: Run Next.js Docker Action
+
+        # Call our local Docker Action.
+        uses: ./.github/actions/nextjs-docker-check
+
+        # Give this step an ID to reference its outputs.
+        id: nextjs-info
+
+        with:
+
+          # Pass package.json location to the Docker Action.
+          package-json: package.json
+
+
+      # ------------------------------------------------------
+      # STEP 3: DISPLAY OUTPUTS
+      # ------------------------------------------------------
+
+      - name: Display Project Information
+
+        # Read outputs returned by the Docker Action.
+        run: |
+          echo "Project Name: ${{ steps.nextjs-info.outputs.project-name }}"
+          echo "Project Version: ${{ steps.nextjs-info.outputs.project-version }}"
+          echo "Next.js Version: ${{ steps.nextjs-info.outputs.next-version }}"

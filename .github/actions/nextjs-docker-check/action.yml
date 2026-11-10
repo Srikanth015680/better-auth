@@ -1,0 +1,56 @@
+# ============================================================
+# CUSTOM DOCKER ACTION: NEXT.JS PROJECT CHECK
+# ============================================================
+
+# Name displayed in GitHub Actions.
+name: Next.js Docker Project Check
+
+# Explains what this action does.
+description: Validate Next.js project information inside Docker
+
+
+# ============================================================
+# INPUTS
+# ============================================================
+
+inputs:
+
+  # Path to the Next.js project's package.json.
+  package-json:
+    description: Path to package.json
+    required: false
+
+    # Default file path if the caller does not provide one.
+    default: package.json
+
+
+# ============================================================
+# OUTPUTS
+# ============================================================
+
+outputs:
+
+  # Return the project name to the calling workflow.
+  project-name:
+    description: Name of the Next.js project
+
+  # Return the project version.
+  project-version:
+    description: Version of the Next.js project
+
+  # Return the Next.js dependency version.
+  next-version:
+    description: Installed Next.js dependency version
+
+
+# ============================================================
+# EXECUTION CONFIGURATION
+# ============================================================
+
+runs:
+
+  # Declare this action as a Docker-based action.
+  using: docker
+
+  # Tell GitHub where the Dockerfile is located.
+  image: Dockerfile
