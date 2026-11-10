@@ -1,0 +1,110 @@
+
+# ============================================================
+# FILE 2: NEXT.JS PRODUCTION DEPLOYMENT
+# ============================================================
+
+name: Next.js Production Deployment
+
+
+# ============================================================
+# 1. WORKFLOW TRIGGERS
+# ============================================================
+
+on:
+
+  # Trigger deployment when main receives a push.
+  push:
+    branches:
+      - main
+
+  # Allow manual deployment.
+  workflow_dispatch:
+
+
+# ============================================================
+# 2. JOBS
+# ============================================================
+
+jobs:
+
+  # ----------------------------------------------------------
+  # JOB 1: PRODUCTION DEPLOYMENT
+  # ----------------------------------------------------------
+
+  deploy:
+
+    runs-on: ubuntu-latest
+
+    # Associate this job with the GitHub production environment.
+    #
+    # Configure this environment under:
+    # Repository Settings -> Environments -> production
+    #
+    # You can configure required reviewers, deployment
+    # restrictions, environment variables and secrets there.
+    environment: production
+
+
+    # --------------------------------------------------------
+    # JOB-LEVEL CONCURRENCY
+    # --------------------------------------------------------
+
+    concurrency:
+
+      # IMPORTANT:
+      # This group name is the production deployment lock.
+      #
+      # Any other workflow deploying to the same production
+      # server must use exactly this same group name.
+      #
+      # This prevents two deployment jobs from running
+      # simultaneously across those workflows.
+      group: shared-production-server
+
+      # FALSE:
+      # Do not cancel the currently running deployment.
+      #
+      # Example:
+      # Deployment A -> Running
+      # Deployment B -> Pending
+      #
+      # Deployment A is allowed to finish.
+      cancel-in-progress: false
+
+
+    # --------------------------------------------------------
+    # DEPLOYMENT STEPS
+    # --------------------------------------------------------
+
+    steps:
+
+      # Download application source code.
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      # Install Node.js 22.
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+
+      # Install project dependencies.
+      - name: Install Dependencies
+        run: npm ci
+
+      # Generate Prisma Client.
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      # Build the production application.
+      - name: Build Next.js Application
+        run: npm run build
+
+      # Placeholder for your actual deployment command.
+      # Replace this with your real deployment process.
+      - name: Deploy Application
+        run: |
+          echo "Starting production deployment..."
+          echo "Deploying Next.js application..."
+          echo "Production deployment completed."

@@ -1,0 +1,140 @@
+
+# ============================================================
+# FILE 1: NEXT.JS CI WORKFLOW - CONCURRENCY DEMONSTRATION
+# ============================================================
+
+# Name displayed in the GitHub Actions tab.
+name: Next.js CI Pipeline
+
+
+# ============================================================
+# 1. WORKFLOW TRIGGERS
+# ============================================================
+
+on:
+
+  # Run when code is pushed to main or feature branches.
+  push:
+    branches:
+      - main
+      - "feature/**"
+
+  # Run when a Pull Request targets main.
+  pull_request:
+    branches:
+      - main
+
+  # Allow manually triggering the workflow.
+  workflow_dispatch:
+
+
+# ============================================================
+# 2. WORKFLOW-LEVEL CONCURRENCY
+# ============================================================
+
+concurrency:
+
+  # Create a separate concurrency group for each PR.
+  #
+  # PR example:
+  # pr-10
+  # pr-20
+  #
+  # For push events, use the branch reference.
+  #
+  # github.event.pull_request.number:
+  # Returns the Pull Request number.
+  #
+  # ||:
+  # If the PR number is unavailable, use github.ref.
+  #
+  # This prevents unrelated branches and PRs from
+  # cancelling each other's workflows.
+  group: nextjs-ci-${{ github.event.pull_request.number || github.ref }}
+
+  # TRUE:
+  # Cancel the older running workflow in the same group
+  # when a newer workflow run starts.
+  #
+  # Example:
+  # PR #10 Run A -> Cancelled
+  # PR #10 Run B -> Running
+  #
+  # PR #20 is not affected by PR #10.
+  cancel-in-progress: true
+
+
+# ============================================================
+# 3. JOBS
+# ============================================================
+
+jobs:
+
+  # ----------------------------------------------------------
+  # JOB 1: BUILD NEXT.JS APPLICATION
+  # ----------------------------------------------------------
+
+  build:
+
+    # GitHub-hosted Ubuntu virtual machine.
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # Download repository source code to the runner.
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      # Install Node.js 22.
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+          # Enable npm dependency caching.
+          cache: npm
+
+      # Install exact dependencies from package-lock.json.
+      - name: Install Dependencies
+        run: npm ci
+
+      # Generate Prisma Client from the Prisma schema.
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      # Build the Next.js application.
+      - name: Build Next.js Application
+        run: npm run build
+
+
+  # ----------------------------------------------------------
+  # JOB 2: RUN TESTS
+  # ----------------------------------------------------------
+
+  test:
+
+    # Wait until the build job succeeds.
+    needs: build
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      # Execute the test script defined in package.json.
+      - name: Run Tests
+        run: npm test
